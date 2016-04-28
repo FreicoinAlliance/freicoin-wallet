@@ -272,67 +272,27 @@ public class ExchangeRatesProvider extends ContentProvider
     private static Object getCoinValueBTC()
     {
 
-
-
-
         //final Map<String, ExchangeRate> rates = new TreeMap<String, ExchangeRate>();
-        // Keep the LTC rate around for a bit
         Double btcRate = 0.0;
-        String currencyCryptsy = CoinDefinition.cryptsyMarketCurrency;
-        String urlCryptsy = "http://pubapi.cryptsy.com/api.php?method=singlemarketdata&marketid="+ CoinDefinition.cryptsyMarketId;
-
-
-
+        String url = "https://api.vircurex.com/api/get_last_trade.json?base="+CoinDefinition.coinTicker+"&alt=BTC";
 
         try {
             // final String currencyCode = currencies[i];
-            final URL URLCryptsy = new URL(urlCryptsy);
-            final HttpURLConnection connectionCryptsy = (HttpURLConnection)URLCryptsy.openConnection();
-            connectionCryptsy.setConnectTimeout(Constants.HTTP_TIMEOUT_MS * 2);
-            connectionCryptsy.setReadTimeout(Constants.HTTP_TIMEOUT_MS * 2);
-            connectionCryptsy.connect();
+            final URL URLC = new URL(url);
+            final HttpURLConnection conn = (HttpURLConnection)URLC.openConnection();
+            conn.setConnectTimeout(Constants.HTTP_TIMEOUT_MS * 2);
+            conn.setReadTimeout(Constants.HTTP_TIMEOUT_MS * 2);
+            conn.connect();
 
-            final StringBuilder contentCryptsy = new StringBuilder();
+            final StringBuilder content = new StringBuilder();
 
             Reader reader = null;
             try
             {
-                reader = new InputStreamReader(new BufferedInputStream(connectionCryptsy.getInputStream(), 1024));
-                Io.copy(reader, contentCryptsy);
-                final JSONObject head = new JSONObject(contentCryptsy.toString());
-                JSONObject returnObject = head.getJSONObject("return");
-                JSONObject markets = returnObject.getJSONObject("markets");
-                JSONObject coinInfo = markets.getJSONObject(CoinDefinition.coinTicker);
-
-
-
-                JSONArray recenttrades = coinInfo.getJSONArray("recenttrades");
-
-                double btcTraded = 0.0;
-                double coinTraded = 0.0;
-
-                for(int i = 0; i < recenttrades.length(); ++i)
-                {
-                    JSONObject trade = (JSONObject)recenttrades.get(i);
-
-                    btcTraded += trade.getDouble("total");
-                    coinTraded += trade.getDouble("quantity");
-
-                }
-
-                Double averageTrade = btcTraded / coinTraded;
-
-
-
-                //Double lastTrade = GLD.getDouble("lasttradeprice");
-
-
-
-                //String euros = String.format("%.7f", averageTrade);
-                // Fix things like 3,1250
-                //euros = euros.replace(",", ".");
-                //rates.put(currencyCryptsy, new ExchangeRate(currencyCryptsy, Utils.toNanoCoins(euros), URLCryptsy.getHost()));
-                if(currencyCryptsy.equalsIgnoreCase("BTC")) btcRate = averageTrade;
+                reader = new InputStreamReader(new BufferedInputStream(conn.getInputStream(), 1024));
+                Io.copy(reader, content);
+                final JSONObject obj = new JSONObject(content.toString());
+                btcRate = obj.getDouble("value");
 
             }
             finally
@@ -425,16 +385,9 @@ public class ExchangeRatesProvider extends ContentProvider
 		{
 
             Double btcRate = 0.0;
-            boolean cryptsyValue = true;
             Object result = getCoinValueBTC();
 
-            if(result == null)
-            {
-                result = getCoinValueBTC_BTER();
-                cryptsyValue = false;
-                if(result == null)
-                    return null;
-            }
+            if (result == null) return null;
 
             btcRate = (Double)result;
 
@@ -516,8 +469,8 @@ public class ExchangeRatesProvider extends ContentProvider
                 }
                 else
                 {
-                    rates.put(CoinDefinition.cryptsyMarketCurrency, new ExchangeRate(CoinDefinition.cryptsyMarketCurrency, GenericUtils.parseCoin(String.format("%.8f", btcRate).replace(",", "."), 0), cryptsyValue ? "pubapi.cryptsy.com" : "data.bter.com"));
-                    rates.put("m" + CoinDefinition.cryptsyMarketCurrency, new ExchangeRate("m" + CoinDefinition.cryptsyMarketCurrency, GenericUtils.parseCoin(String.format("%.5f", btcRate*1000).replace(",", "."), 0), cryptsyValue ? "pubapi.cryptsy.com" : "data.bter.com"));
+                    rates.put(CoinDefinition.cryptsyMarketCurrency, new ExchangeRate(CoinDefinition.cryptsyMarketCurrency, GenericUtils.parseCoin(String.format("%.8f", btcRate).replace(",", "."), 0), "api.vircurex.com"));
+                    rates.put("m" + CoinDefinition.cryptsyMarketCurrency, new ExchangeRate("m" + CoinDefinition.cryptsyMarketCurrency, GenericUtils.parseCoin(String.format("%.5f", btcRate*1000).replace(",", "."), 0), "api.vircurex.com"));
                 }
 
 
