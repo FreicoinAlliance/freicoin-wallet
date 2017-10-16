@@ -274,10 +274,9 @@ public class ExchangeRatesProvider extends ContentProvider
 
         //final Map<String, ExchangeRate> rates = new TreeMap<String, ExchangeRate>();
         Double btcRate = 0.0;
-        String url = "https://api.vircurex.com/api/get_last_trade.json?base="+CoinDefinition.coinTicker+"&alt=BTC";
+        String url = "https://api.coinmarketcap.com/v1/ticker/"+CoinDefinition.coinTicker;
 
         try {
-            // final String currencyCode = currencies[i];
             final URL URLC = new URL(url);
             final HttpURLConnection conn = (HttpURLConnection)URLC.openConnection();
             conn.setConnectTimeout(Constants.HTTP_TIMEOUT_MS * 2);
@@ -291,14 +290,16 @@ public class ExchangeRatesProvider extends ContentProvider
             {
                 reader = new InputStreamReader(new BufferedInputStream(conn.getInputStream(), 1024));
                 Io.copy(reader, content);
-                final JSONObject obj = new JSONObject(content.toString());
-                btcRate = obj.getDouble("value");
-
+                final JSONArray head = new JSONArray(content.toString());
+                JSONObject obj = (JSONObject)head.get(0);
+                btcRate = obj.getDouble("price_btc");
             }
             finally
             {
                 if (reader != null)
                     reader.close();
+                if (conn != null)
+                  conn.disconnect();
             }
             return btcRate;
         }
@@ -313,66 +314,6 @@ public class ExchangeRatesProvider extends ContentProvider
 
         return null;
     }
-
-    private static Object getCoinValueBTC_BTER()
-    {
-        //final Map<String, ExchangeRate> rates = new TreeMap<String, ExchangeRate>();
-        // Keep the LTC rate around for a bit
-        Double btcRate = 0.0;
-        String currency = CoinDefinition.cryptsyMarketCurrency;
-        String url = "http://data.bter.com/api/1/ticker/"+ CoinDefinition.coinTicker.toLowerCase() + "_" + CoinDefinition.cryptsyMarketCurrency.toLowerCase();
-
-
-
-
-
-        try {
-            // final String currencyCode = currencies[i];
-            final URL URL_bter = new URL(url);
-            final HttpURLConnection connection = (HttpURLConnection)URL_bter.openConnection();
-            connection.setConnectTimeout(Constants.HTTP_TIMEOUT_MS * 2);
-            connection.setReadTimeout(Constants.HTTP_TIMEOUT_MS * 2);
-            connection.connect();
-
-            final StringBuilder content = new StringBuilder();
-
-            Reader reader = null;
-            try
-            {
-                reader = new InputStreamReader(new BufferedInputStream(connection.getInputStream(), 1024));
-                Io.copy(reader, content);
-                final JSONObject head = new JSONObject(content.toString());
-                String result = head.getString("result");
-                if(result.equals("true"))
-                {
-
-                    Double averageTrade = head.getDouble("avg");
-
-
-                    if(currency.equalsIgnoreCase("BTC"))
-                        btcRate = averageTrade;
-                }
-                return btcRate;
-            }
-            finally
-            {
-                if (reader != null)
-                    reader.close();
-            }
-
-        }
-        catch (final IOException x)
-        {
-            x.printStackTrace();
-        }
-        catch (final JSONException x)
-        {
-            x.printStackTrace();
-        }
-
-        return null;
-    }
-
 
 	private static Map<String, ExchangeRate> requestExchangeRates(final URL url, final String userAgent, final String source, final String... fields)
 	{
